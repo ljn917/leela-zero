@@ -8,11 +8,12 @@ import trollius
 from six.moves import urllib
 
 
-if len(sys.argv) != 2 :
-    print("Usage: %s batch-size" % sys.argv[0])
-    sys.exit(-1)
+#if len(sys.argv) != 2 :
+#    print("Usage: %s batch-size" % sys.argv[0])
+#    sys.exit(-1)
 
-QLEN     = int(sys.argv[1]) # alias: Batch size
+#QLEN     = int(sys.argv[1]) # alias: Batch size
+QLEN = None
 
 print("Leela Zero TCP Neural Net Service")
 
@@ -73,24 +74,20 @@ def loadWeight(text):
     weights = [ [float(t) for t in l.split(" ")] for l in w[1:] ]
     return (weights, residual_blocks, count)
 
-print("\nLoading latest network")
-nethash = getLatestNNHash()
-print("Hash: " + nethash)
-print("Downloading weights")
-txt     = downloadBestNetworkWeight(nethash)
-print("Done!")
-
-weights, numBlocks, numFilters = loadWeight(txt)
-print(" %d channels and %d blocks" % (numFilters, numBlocks) )
 
 import threading
 netlock = threading.Lock()
 newNetWeight = None
+net = None
+nethash = None
 
-def LZN(ws, nb, nf):
+def LZN(ws, nb, nf, minibatch_size):
     # ws: weights
     # nb: number of blocks
     # nf: number of filters
+
+    global QLEN
+    QLEN = minibatch_size
 
     global wc  # weight counter
     wc = -1
@@ -196,7 +193,7 @@ def LZN(ws, nb, nf):
     out = T.concatenate( [polfcout, T.tanh(valout)], axis=1 )
     return (x, function(params, out))
 
-print("\nCompling the latest neural network")
+#print("\nCompling the latest neural network")
 
 from theano import *
 import theano.tensor as T
@@ -204,13 +201,12 @@ from theano.tensor.nnet import conv2d
 from theano.tensor.nnet import relu
 from theano.tensor.nnet.bn import batch_normalization_test as bn
 
-net = LZN(weights, numBlocks, numFilters)
 
 # inp = np.zeros( (1, 18, 19, 19), dtype=np.float32)
 # for i in range(10000):
 #     net[0].set_value(inp)
 #     out = net[1]()
-print("Done!")
+#print("Done!")
 
 
 import time
